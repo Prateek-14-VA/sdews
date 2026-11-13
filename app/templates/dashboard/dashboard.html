@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · SDEWS{% endblock %}
+
+{% block head %}
+<style>
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        color: white;
+        padding: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    }
+    .kpi-total { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+    .kpi-risk { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .kpi-safe { background: linear-gradient(135deg, #10b981, #047857); }
+    
+    .table-card {
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .risk-high { background: #fee2e2; color: #b91c1c; font-weight: 600; }
+    .risk-med { background: #fef3c7; color: #b45309; font-weight: 600; }
+    .risk-low { background: #dcfce7; color: #15803d; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Hidden input to safely pass JSON to JavaScript -->
+    <input type="hidden" id="studentDataJSON" value='{{ students | tojson | safe }}'>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Mentor Dashboard</h2>
+            <p class="text-muted">Welcome back, {{ user.username }}. Here is your student risk overview.</p>
+        </div>
+        <a href="{{ url_for('main.logout') }}" class="btn btn-outline-danger">Logout</a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="kpi-card kpi-total">
+                <h6 class="text-uppercase opacity-75 mb-2">Total Students</h6>
+                <h2 class="mb-0">4,424</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-risk">
+                <h6 class="text-uppercase opacity-75 mb-2">High Risk (Dropouts)</h6>
+                <h2 class="mb-0">1,421</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="kpi-card kpi-safe">
+                <h6 class="text-uppercase opacity-75 mb-2">On Track (Graduates)</h6>
+                <h2 class="mb-0">2,209</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Table -->
+    <div class="card table-card">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="mb-0">Top At-Risk Students (Real Data)</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Course Code</th>
+                        <th>Risk Level</th>
+                        <th>Top Risk Factor</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.id }}</td>
+                        <td>{{ student.course }}</td>
+                        <td>
+                            {% if student.prediction == 'Dropout' %}
+                                <span class="badge risk-high px-3 py-2">High Risk</span>
+                            {% elif student.prediction == 'Enrolled' %}
+                                <span class="badge risk-med px-3 py-2">Medium Risk</span>
+                            {% else %}
+                                <span class="badge risk-low px-3 py-2">Low Risk</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ student.top_factor }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showProfile('{{ student.id }}')">View Profile</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Student Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+      <div class="modal-header border-0" style="background: #f8fafc; border-radius: 16px 16px 0 0;">
+        <h5 class="modal-title fw-bold" id="modalStudentId">Student Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6 class="text-muted text-uppercase small fw-bold">Prediction</h6>
+                <h3 class="mb-0" id="modalPrediction"></h3>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted text-uppercase small fw-bold">Risk Level</h6>
+                <h3 class="mb-0" id="modalRiskBadge"></h3>
+            </div>
+        </div>
+
+        <h6 class="text-muted text-uppercase small fw-bold mb-3">Why the AI made this decision:</h6>
+        <ul class="list-group list-group-flush" id="modalReasons">
+            <!-- Reasons will be injected here by JavaScript -->
+        </ul>
+
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary">Assign Mentor</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Safely parse the JSON data from the hidden input
+    const studentData = JSON.parse(document.getElementById('studentDataJSON').value || '[]');
+
+    function showProfile(studentId) {
+        // Find the student in the array
+        const student = studentData.find(s => s.id === studentId);
+        
+        if (!student) return;
+
+        // 1. Set the title and prediction text
+        document.getElementById('modalStudentId').innerText = "Student " + student.id;
+        document.getElementById('modalPrediction').innerText = student.prediction;
+        
+        // 2. Set the Risk Badge
+        const badgeHtml = student.prediction === 'Dropout' 
+            ? '<span class="badge risk-high px-3 py-2">High Risk</span>'
+            : student.prediction === 'Enrolled'
+            ? '<span class="badge risk-med px-3 py-2">Medium Risk</span>'
+            : '<span class="badge risk-low px-3 py-2">Low Risk</span>';
+        document.getElementById('modalRiskBadge').innerHTML = badgeHtml;
+
+        // 3. Inject the reasons (SHAP Factors)
+        const reasonsList = document.getElementById('modalReasons');
+        reasonsList.innerHTML = ''; // clear old reasons
+        
+        student.factors.forEach(factor => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+                <span><strong>${factor.feature}</strong></span>
+                <span class="badge bg-primary rounded-pill">${(factor.impact * 100).toFixed(1)}%</span>
+            `;
+            reasonsList.appendChild(li);
+        });
+
+        // 4. Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

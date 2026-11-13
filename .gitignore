@@ -1,0 +1,53 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Virtual env ----
+venv/
+env/
+.venv/
+
+# ---- Env & secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Flask / instance ----
+instance/
+*.db
+*.sqlite3
+logs/
+*.log
+
+# ---- Uploads (user data) ----
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# ---- ML models (large binaries) ----
+ml/models/*.pkl
+ml/models/*.joblib
+ml/models/*.h5
+ml/models/*.json
+!ml/models/.gitkeep
+
+# ---- Data (raw + processed kept small only) ----
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ---- Notebooks checkpoints ----
+.ipynb_checkpoints/
+notebooks/**/*.ipynb_checkpoints
+
+# ---- Editors / OS ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

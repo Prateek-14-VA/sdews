@@ -1,0 +1,41 @@
+/* ==========================================
+   SDEWS — Global Styles
+   ========================================== */
+:root {
+  --sdews-primary: #6366f1;
+  --sdews-accent: #14b8a6;
+  --sdews-bg: #f8fafc;
+  --sdews-text: #0f172a;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--sdews-bg);
+  color: var(--sdews-text);
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ---- Risk badges (used later in dashboard) ---- */
+.badge-risk-high {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+}
+.badge-risk-medium {
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 600;
+}
+.badge-risk-low {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* ---- Smooth transitions globally ---- */
+a, button {
+  transition: all 0.2s ease;
+}
